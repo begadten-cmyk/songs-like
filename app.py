@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 SPOTIFY_CLIENT_ID = os.environ.get('SPOTIFY_CLIENT_ID')
 SPOTIFY_CLIENT_SECRET = os.environ.get('SPOTIFY_CLIENT_SECRET')
 HOST = os.environ.get('HOST', '0.0.0.0')
-PORT = int(os.environ.get('PORT', 8080))
+PORT = int(os.environ.get('PORT', 5000))
 
 token_cache = {
     'access_token': None,
