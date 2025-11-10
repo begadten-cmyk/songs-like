@@ -2,57 +2,22 @@
 
 # SongsLike
 
-A fast, production-ready web app that helps you discover similar songs using Spotify's API.
+A fast web app to find songs that feel the same using the Spotify Web API.
 
 ## Features
+- Live search as you type
+- 12 similar songs with cover art and preview links
+- Fallback if Spotify recs fail (uses artist/genre/keyword search)
+- Optional chips: tempo, energy, valence, danceability
+- No login (client credentials only)
 
-- **Live Search**: Type a song name and get instant search results from Spotify
-- **Smart Recommendations**: Get 12 similar songs with cover art, artist info, and preview buttons
-- **Robust Fallback**: If Spotify's recommendations API fails, the app uses intelligent search-based fallback (genre, artist, and keyword searches) to ensure you always get results
-- **Audio Features**: Optional tempo, energy, valence, and danceability chips (shown only when available)
-- **No Login Required**: Uses Spotify Client Credentials flow (no user authentication needed)
-
-## How to Run on Replit
-
-1. **Add Spotify API Credentials**:
-   - Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-   - Create an app to get your Client ID and Client Secret
-   - In Replit, open the **Secrets** tool (🔒 icon in sidebar)
-   - Add these two secrets:
-     - `SPOTIFY_CLIENT_ID`: Your Spotify Client ID
-     - `SPOTIFY_CLIENT_SECRET`: Your Spotify Client Secret
-
-2. **Run the App**:
-   - The app will start automatically when you open this Repl
-   - Or click the "Run" button at the top
-   - The preview will open showing the SongsLike interface
-
-3. **Try It Out**:
-   - Type a song name in the search box (e.g., "Nonstop")
-   - Click "Select" on a search result
-   - View 12 similar song recommendations with cover art and preview buttons
-
-## Tech Stack
-
-- **Backend**: Python 3.11 + Flask
-- **Frontend**: Vanilla HTML/CSS/JavaScript (no build step)
-- **API**: Spotify Web API with Client Credentials OAuth flow
-
-## Notes
-
-- **Audio Features**: The optional feature chips (tempo, energy, valence, danceability) require Spotify API access to the audio-features endpoint. If your app doesn't have access or the API returns 403/429, the app will gracefully hide these chips and still show all song recommendations.
-- **Fallback Strategy**: If Spotify's `/recommendations` endpoint fails or is unavailable, the app automatically falls back to a search-based approach that combines genre-based searches, artist-specific searches, and keyword matching to find similar tracks. This ensures you always get relevant results even if certain API endpoints are restricted.
-
-## API Endpoints
-
-- `GET /health` - Health check endpoint
-- `GET /` - Main application page
-- `GET /api/search?q=<query>` - Search for songs
-- `GET /api/recommendations?track_id=<id>` - Get similar songs
-
-## Testing
-
-Run unit tests with:
+## Run Locally
+1) Make a Spotify app at https://developer.spotify.com/dashboard to get:
+   - SPOTIFY_CLIENT_ID
+   - SPOTIFY_CLIENT_SECRET
+2) In your terminal:
 ```bash
-pytest tests/
-```
+pip install -r requirements.txt
+export SPOTIFY_CLIENT_ID="your_id"
+export SPOTIFY_CLIENT_SECRET="your_secret"
+python app.py
