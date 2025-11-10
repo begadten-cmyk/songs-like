@@ -6,7 +6,7 @@ A fast, production-ready web app that helps you discover similar songs using Spo
 
 - **Live Search**: Type a song name and get instant search results from Spotify
 - **Smart Recommendations**: Get 12 similar songs with cover art, artist info, and preview buttons
-- **Fallback Logic**: If Spotify's recommendations API fails, the app automatically falls back to related artists' top tracks
+- **Robust Fallback**: If Spotify's recommendations API fails, the app uses intelligent search-based fallback (genre, artist, and keyword searches) to ensure you always get results
 - **Audio Features**: Optional tempo, energy, valence, and danceability chips (shown only when available)
 - **No Login Required**: Uses Spotify Client Credentials flow (no user authentication needed)
 
@@ -39,7 +39,7 @@ A fast, production-ready web app that helps you discover similar songs using Spo
 ## Notes
 
 - **Audio Features**: The optional feature chips (tempo, energy, valence, danceability) require Spotify API access to the audio-features endpoint. If your app doesn't have access or the API returns 403/429, the app will gracefully hide these chips and still show all song recommendations.
-- **Fallback Strategy**: If Spotify's `/recommendations` endpoint fails, the app automatically falls back to fetching related artists' top tracks, ensuring you always get results.
+- **Fallback Strategy**: If Spotify's `/recommendations` endpoint fails or is unavailable, the app automatically falls back to a search-based approach that combines genre-based searches, artist-specific searches, and keyword matching to find similar tracks. This ensures you always get relevant results even if certain API endpoints are restricted.
 
 ## API Endpoints
 

@@ -171,36 +171,71 @@ def recommendations():
         logger.debug(f"Recommendations endpoint failed: {e}, trying fallback")
     
     if not recommendations:
-        logger.debug("Using fallback: related artists' top tracks")
+        logger.debug("Using fallback: search-based recommendations")
         try:
             track_data = sp_get(f'/tracks/{track_id}')
             artists = track_data.get('artists', [])
+            album = track_data.get('album', {})
+            track_name = track_data.get('name', '')
             
             if not artists:
                 return jsonify({'items': []})
             
+            artist_name = artists[0]['name']
             artist_id = artists[0]['id']
             
-            related = sp_get(f'/artists/{artist_id}/related-artists')
-            related_artists = related.get('artists', [])[:5]
-            
-            artist_ids = [artist_id]
-            if related_artists:
-                artist_ids = [a['id'] for a in related_artists[:5]]
-            
             all_tracks = []
-            for aid in artist_ids:
-                try:
-                    top_tracks = sp_get(f'/artists/{aid}/top-tracks', params={'market': 'US'})
-                    all_tracks.extend(top_tracks.get('tracks', []))
-                except Exception as e:
-                    logger.debug(f"Failed to get top tracks for artist {aid}: {e}")
-                    continue
+            
+            try:
+                artist_info = sp_get(f'/artists/{artist_id}')
+                genres = artist_info.get('genres', [])[:2]
+                
+                for genre in genres:
+                    try:
+                        search_results = sp_get('/search', params={
+                            'q': f'genre:{genre}',
+                            'type': 'track',
+                            'market': 'US',
+                            'limit': 20
+                        })
+                        genre_tracks = search_results.get('tracks', {}).get('items', [])
+                        all_tracks.extend(genre_tracks)
+                    except Exception as e:
+                        logger.debug(f"Genre search failed for {genre}: {e}")
+            except Exception as e:
+                logger.debug(f"Failed to get artist genres: {e}")
+            
+            try:
+                search_results = sp_get('/search', params={
+                    'q': f'artist:{artist_name}',
+                    'type': 'track',
+                    'market': 'US',
+                    'limit': 30
+                })
+                artist_tracks = search_results.get('tracks', {}).get('items', [])
+                all_tracks.extend(artist_tracks)
+            except Exception as e:
+                logger.debug(f"Artist search failed: {e}")
+            
+            words = track_name.split()[:3]
+            for word in words:
+                if len(word) > 3:
+                    try:
+                        search_results = sp_get('/search', params={
+                            'q': word,
+                            'type': 'track',
+                            'market': 'US',
+                            'limit': 15
+                        })
+                        keyword_tracks = search_results.get('tracks', {}).get('items', [])
+                        all_tracks.extend(keyword_tracks)
+                    except Exception as e:
+                        logger.debug(f"Keyword search failed for {word}: {e}")
             
             seen_ids = {track_id}
             unique_tracks = []
             for track in all_tracks:
-                if track['id'] not in seen_ids:
+                if track and track.get('id') and track['id'] not in seen_ids:
                     unique_tracks.append(track)
                     seen_ids.add(track['id'])
                 if len(unique_tracks) >= 12:
