@@ -1,0 +1,130 @@
+You are Replit Agent. Build a small production-ready web app called “SongsLike” that lets a user type a song, select it from live search results, then see similar songs. Stack and constraints below. Do everything end-to-end and stop only when it runs in the Replit preview.
+
+GOAL
+- Fast MVP for resume: type a song → select → get 12 similar songs with cover art, artists, preview button, and a link to open on Spotify.
+- No user login. Use Spotify Client Credentials flow only.
+- If Spotify’s /recommendations fails, fall back to related artists’ top tracks so results always render.
+- Feature chips (tempo/energy/valence/dance) are optional: show only if audio-features are successfully fetched; otherwise hide.
+
+TECH + FILES
+- Python 3.11 + Flask for API and templating.
+- Simple vanilla HTML/CSS/JS front end (no build step).
+- Project files to create:
+  - requirements.txt
+  - .env (do not commit; set variables programmatically in Replit Secrets)
+  - .replit and replit.nix configured to run: `python app.py`
+  - app.py
+  - templates/index.html
+  - static/styles.css
+  - static/app.js
+  - README.md
+  - tests/test_helpers.py (basic unit tests for helpers)
+
+DEPENDENCIES
+- Flask==3.0.3
+- requests==2.32.3
+- python-dotenv==1.0.1
+
+ENV + SECRETS
+- Use Replit Secrets to store:
+  - SPOTIFY_CLIENT_ID
+  - SPOTIFY_CLIENT_SECRET
+- Also configure HOST=0.0.0.0 and PORT=8080 (Replit uses 8080).
+- If secrets are missing, app should print a clear message and still boot a health page.
+
+BACKEND (Flask)
+- Implement small auth cache for the Spotify token with Client Credentials flow.
+  - Token endpoint: https://accounts.spotify.com/api/token
+  - grant_type=client_credentials
+  - Cache access_token and expires_at (epoch). Refresh 30 seconds before expiry.
+- Helper `sp_get(path, params=None)`:
+  - Prefix base URL https://api.spotify.com/v1
+  - Adds Authorization: Bearer <token>
+  - Timeout 10s
+  - On non-200 -> raise for status with clear log; caller will catch.
+- Routes:
+  1) GET `/health` → {"ok": true}
+  2) GET `/` → render `templates/index.html`
+  3) GET `/api/search?q=<string>`:
+     - Calls `/search` with type=track, market=US, limit=10.
+     - Return minimal fields: id, name, artists (comma string), album name, image (medium), preview_url, external_url.
+  4) GET `/api/recommendations?track_id=<id>`:
+     - First try Spotify `/recommendations` with seed_tracks=<id>, limit=12, market=US.
+     - If that call 4xx/5xx or returns empty, do fallback:
+       a) GET `/tracks/{id}` → extract first artist id A
+       b) GET `/artists/{A}/related-artists` → take up to 5 related artist IDs; if none, use A
+       c) For each artist ID, GET `/artists/{id}/top-tracks?market=US`, append tracks
+       d) De-duplicate and drop the seed track id, keep first 12
+     - OPTIONAL features: Try to GET `/audio-features?ids=<comma ids>` in chunks of ≤100. If 403/429 occurs, swallow and continue with features omitted. Map returned features by id and attach if present; do not block rendering if missing.
+     - Return shape: {"items":[{ id, name, artists, album, image, preview_url, external_url, features:{tempo,energy,valence,danceability}? }]}
+- Logging:
+  - Print concise DEBUG lines for failures but never crash the server.
+- CORS:
+  - Not required since front end served by Flask, but allow same-origin.
+
+FRONTEND (index.html + static/app.js + static/styles.css)
+- Simple, mobile-friendly page with a dark theme.
+- Header: “SongsLike — Find songs that feel the same”.
+- Search bar at top with placeholder “Search a song…”.
+- As the user types, debounced (300ms) call to `/api/search?q=...`. Show a dropdown list with “Select” buttons.
+- When “Select” is clicked:
+  - Clear dropdown, show a “Recommendations” section with a skeleton/loading state.
+  - Fetch `/api/recommendations?track_id=...`.
+  - Render a 3-column responsive grid of cards (stacked on mobile).
+- Card content:
+  - Cover image (square). If missing, show a gray placeholder.
+  - Title and artists.
+  - Buttons/links:
+    - “Open in Spotify” → external_url
+    - If preview_url present, show a small <audio> tag with controls.
+  - Feature chips:
+    - Show chips only when feature values exist.
+    - tempo: round to integer BPM
+    - energy/valence/danceability: show with 2 decimals
+- Empty/error states:
+  - If recommendations array empty, show: “No similar songs found. Try another track.”
+  - If API fails, show: “Could not fetch recommendations (code). Try again.”
+- UX polish:
+  - Loading spinner on search and on recommendations.
+  - Keyboard support: Enter selects first search result.
+  - Escape key closes the dropdown.
+
+STYLE (styles.css)
+- Dark background #0f1115, cards #151821, text #e5e7eb, muted #9aa0a6.
+- Rounded cards, subtle shadow, hover lift.
+- Chips are small rounded pills with border; hide container when no chips.
+
+ROBUSTNESS
+- All network calls have timeout=10s.
+- Handle 403/404/429 from Spotify gracefully with fallback or soft error.
+- Never show raw stack traces in the UI.
+
+RUN + CONFIG
+- Ensure `.replit` runs `python app.py` and binds to HOST/PORT from env.
+- Print the preview URL and instructions in console when server starts.
+
+TESTS (pytest)
+- tests/test_helpers.py:
+  - Unit test `_simplify_track` to ensure correct mapping of id/name/artists/album/image/urls.
+  - Unit test that missing fields don’t raise.
+
+README.md
+- Short description, features, how to run on Replit, how to add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in Secrets, and notes about optional audio-features requiring higher API access and that the app falls back when blocked.
+
+ACCEPTANCE CRITERIA
+1) App boots on Replit preview without manual terminal commands.
+2) Typing “Nonstop” shows search results; clicking “Select” returns 12 recommendation cards within 2–3s.
+3) If Spotify /recommendations fails, related artist fallback still returns cards.
+4) Cards render title, artists, cover art, “Open in Spotify”, preview audio when available.
+5) Feature chips appear only when audio-features successfully fetched; otherwise chips are hidden (not “-”).
+6) No unhandled exceptions in server logs during typical use.
+
+SETUP TASKS FOR YOU (Agent)
+- Create all files above with working code.
+- Add Flask, requests, python-dotenv to requirements.txt.
+- Configure .replit to run the server.
+- Prompt me once to paste SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET into Replit Secrets, then continue automatically.
+- After secrets are set, start the server and open the preview, then test with “Nonstop” and ensure results render.
+- If you hit a Spotify 4xx/5xx, log it and verify fallback path returns results so I see recommendations on screen.
+
+Now implement.
